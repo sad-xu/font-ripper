@@ -1,26 +1,151 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { Box, Button, ButtonGroup, Divider, TextField } from "@mui/material";
+import { Font, Glyph, parse } from "opentype.js";
+import { QUICK_TEXT, downloadFont, setCssFont } from "./utils";
+import { ChangeEvent, useMemo, useState } from "react";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import UploadBox from "./components/UploadBox";
 
-function App() {
+const App = () => {
+  const [font, setFont] = useState<Font | null>(null);
+  const [inputText, setInputText] = useState("");
+
+  /** 解析字体文件 */
+  const parseFontFile = (file: File) => {
+    const reader = new FileReader();
+    setCssFont(URL.createObjectURL(file));
+    reader.onload = function (e) {
+      setFont(() => {
+        const parsedFont = parse(reader.result);
+        console.log(parsedFont);
+        return parsedFont;
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  /** 获取输入文字去重数量 */
+  const getTextNum = () => {
+    const map: { [key: number]: true } = {};
+    let num = 0;
+    for (let i = 0; i < inputText.length; i++) {
+      const code = inputText.charCodeAt(i);
+      if (!map[code]) {
+        map[code] = true;
+        num++;
+      }
+    }
+    return num;
+  };
+
+  /** 快捷输入 */
+  const addQuickText = (key: string) => {
+    setInputText(() => {
+      const str = QUICK_TEXT[key] || "";
+      return inputText + `${str}\n`;
+    });
+  };
+
+  /** 下载字体 */
+  const handleDownload = () => {
+    if (!font) return;
+    //获取输入文字unicode
+    const map: { [key: number]: true } = { 0: true, 32: true };
+    for (let i = 0; i < inputText.length; i++) {
+      const code = inputText.charCodeAt(i);
+      if (!map[code]) {
+        map[code] = true;
+      }
+    }
+
+    const selectedCode: Set<number> = new Set();
+
+    Object.keys(map).forEach((unicode) =>
+      selectedCode.add(font.tables.cmap.glyphIndexMap[unicode] || 0)
+    );
+
+    const glyphs: Glyph[] = [];
+
+    selectedCode.forEach((code) => {
+      const g = (font.glyphs as any).glyphs[code];
+      glyphs.push(g);
+    });
+
+    const newFont = new Font({
+      familyName: font.names.fontFamily.en,
+      styleName: font.names.fontSubfamily.en || "Medium",
+      unitsPerEm: font.unitsPerEm,
+      ascender: font.ascender,
+      descender: font.descender,
+      createdTimestamp: +new Date(),
+      glyphs: glyphs,
+    });
+    const buffer2 = newFont.toArrayBuffer();
+
+    downloadFont(font.names.fontFamily.en, buffer2);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          p: 2,
+        }}
+      >
+        {useMemo(
+          () => (
+            <UploadBox
+              font={font}
+              onUpload={(file) => parseFontFile(file)}
+            ></UploadBox>
+          ),
+          [font]
+        )}
+
+        <TextField
+          sx={{
+            flex: 4,
+            "& .MuiInputBase-input": {
+              fontFamily: '"custom"',
+            },
+          }}
+          label="Text"
+          multiline
+          rows={12}
+          value={inputText}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            setInputText(event.target.value);
+          }}
+        />
+      </Box>
+      <Divider></Divider>
+      {/*  */}
+      <Box sx={{ p: 2, display: "flex", alignItems: "center" }}>
+        <Box sx={{ flex: 1, mr: 3 }}>已输入字体数: {getTextNum()}</Box>
+        <Box sx={{ flex: 4 }}>
+          快捷输入:
+          <ButtonGroup size="small" variant="contained" sx={{ ml: 2 }}>
+            <Button onClick={() => addQuickText("number")}>数字</Button>
+            <Button onClick={() => addQuickText("letter")}>字母</Button>
+          </ButtonGroup>
+        </Box>
+      </Box>
+      <Divider></Divider>
+      {/*  */}
+      <Box
+        sx={{
+          mt: 4,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Button variant="contained" size="large" onClick={handleDownload}>
+          <FileDownloadIcon></FileDownloadIcon>
+          导出
+        </Button>
+      </Box>
+    </Box>
   );
-}
+};
 
 export default App;
