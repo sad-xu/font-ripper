@@ -1,9 +1,18 @@
-import { Box, Button, ButtonGroup, Divider, TextField } from "@mui/material";
+import {
+  AppBar,
+  Box,
+  Button,
+  ButtonGroup,
+  Divider,
+  TextField,
+  Toolbar,
+} from "@mui/material";
 import { Font, Glyph, parse } from "opentype.js";
 import { QUICK_TEXT, downloadFont, setCssFont } from "./utils";
 import { ChangeEvent, useMemo, useState } from "react";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import UploadBox from "./components/UploadBox";
+import TextBox from "./components/TextBox";
 
 const App = () => {
   const [font, setFont] = useState<Font | null>(null);
@@ -65,8 +74,8 @@ const App = () => {
 
     const glyphs: Glyph[] = [];
 
-    selectedCode.forEach((code) => {
-      const g = (font.glyphs as any).glyphs[code];
+    selectedCode.forEach((index) => {
+      const g = (font.glyphs as any).glyphs[index];
       glyphs.push(g);
     });
 
@@ -86,6 +95,11 @@ const App = () => {
 
   return (
     <Box>
+      <AppBar position="sticky">
+        <Toolbar>
+          <h2>Font Ripper</h2>
+        </Toolbar>
+      </AppBar>
       <Box
         sx={{
           display: "flex",
@@ -111,7 +125,7 @@ const App = () => {
           }}
           label="Text"
           multiline
-          rows={12}
+          rows={10}
           value={inputText}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
             setInputText(event.target.value);
@@ -120,29 +134,50 @@ const App = () => {
       </Box>
       <Divider></Divider>
       {/*  */}
-      <Box sx={{ p: 2, display: "flex", alignItems: "center" }}>
-        <Box sx={{ flex: 1, mr: 3 }}>已输入字体数: {getTextNum()}</Box>
-        <Box sx={{ flex: 4 }}>
-          快捷输入:
-          <ButtonGroup size="small" variant="contained" sx={{ ml: 2 }}>
-            <Button onClick={() => addQuickText("number")}>数字</Button>
-            <Button onClick={() => addQuickText("letter")}>字母</Button>
-          </ButtonGroup>
-        </Box>
-      </Box>
-      <Divider></Divider>
-      {/*  */}
       <Box
         sx={{
-          mt: 4,
           display: "flex",
-          justifyContent: "center",
+          p: 2,
         }}
       >
-        <Button variant="contained" size="large" onClick={handleDownload}>
-          <FileDownloadIcon></FileDownloadIcon>
-          导出
-        </Button>
+        <TextBox font={font}></TextBox>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ mr: 6 }}>已输入字体数: {getTextNum()}</Box>
+            <Box>
+              快捷输入:
+              <ButtonGroup size="small" variant="contained" sx={{ ml: 2 }}>
+                <Button onClick={() => addQuickText("number")}>数字</Button>
+                <Button onClick={() => addQuickText("letter")}>字母</Button>
+              </ButtonGroup>
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              mt: 3,
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <Button variant="contained" size="large" onClick={handleDownload}>
+              <FileDownloadIcon></FileDownloadIcon>
+              导出
+            </Button>
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

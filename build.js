@@ -3,7 +3,7 @@ process.env.GENERATE_SOURCEMAP = "false";
 
 const rewire = require("rewire");
 const defaults = rewire("react-scripts/scripts/build.js");
-const config = defaults.__get__("config");
+defaults.__get__("config");
 // const chalk = require('chalk')
 
 // 进度展示
